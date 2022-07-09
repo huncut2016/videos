@@ -4,7 +4,7 @@ import numpy as np
 
 class Main(MovingCameraScene):
     def introduction(self):
-        title = Text("Fermat's point").center()
+        title = Text("Fermat point").center()
         mname = Text("András Zoller").scale(0.5).next_to(title, DOWN)
         self.play(Write(title))
         self.play(Write(mname))
@@ -12,7 +12,7 @@ class Main(MovingCameraScene):
         self.play(FadeOut(VGroup(title, mname)))
         self.wait()
 
-    def construct(self):
+    def demonstration(self):
         triangle = Polygon([5, -2, 0], [-1, 4, 0], [-3, -2, 0]).center()
 
         p_coord = triangle.get_center()
@@ -91,7 +91,7 @@ class Main(MovingCameraScene):
         inner_triangle: Polygon = (
             Polygon(c.get_center(), p.get_center(), b.get_center())
             .set_fill(TEAL, opacity=0.5)
-            .set_stroke(TEAL, opacity=0.5)
+            .set_stroke(TEAL, opacity=1)
         )
 
         self.play(FadeIn(inner_triangle))
@@ -163,7 +163,7 @@ class Main(MovingCameraScene):
 
         self.wait()
 
-        p_p = Line(p.get_center(), _p.get_center(), color=YELLOW_D)
+        p_p = _pp = Line(p.get_center(), _p.get_center(), color=YELLOW_D)
 
         self.play(Create(p_p))
         self.wait()
@@ -270,11 +270,6 @@ class Main(MovingCameraScene):
         )
         self.wait()
 
-        # t.set_color(PURE_GREEN)
-        t = MathTex(*("AP + BP + CP =min".split()))
-        t[2].set_color(YELLOW_D)
-        t.next_to(t5.copy().shift(3 * UP), DOWN).shift(DOWN)
-
         self.play(
             t5.animate.shift(3 * UP),
         )
@@ -302,6 +297,8 @@ class Main(MovingCameraScene):
             ),
         )
 
+        proofs = VGroup()
+
         for index, (text, highlight) in enumerate(zip(proof, highlights)):
             tex: Tex = None
 
@@ -312,6 +309,8 @@ class Main(MovingCameraScene):
 
             tex.scale(0.7).next_to(t5, DOWN, buff=1).shift(index * DOWN)
             tex.set_color_by_tex("P", TEAL)
+
+            proofs.add(tex)
 
             self.play(FadeIn(tex, shift=DOWN), highlight, run_time=4)
             self.wait()
@@ -375,21 +374,9 @@ class Main(MovingCameraScene):
                 Polygon(c.get_center(), p.get_center(), b.get_center())
                 .rotate(-60 * DEGREES, about_point=b.get_center())
                 .set_fill(TEAL, opacity=0.5)
-                .set_stroke(TEAL, opacity=0.5)
+                .set_stroke(TEAL, opacity=1)
             )
         )
-
-        def helper2():
-            an = Angle.from_three_points(
-                inner_triangle.get_vertices()[1]
-                * (1 - 1e-10),  # at the beginning P == P'
-                b.get_center(),
-                p.get_center(),
-                radius=0.7,
-                color=ORANGE,
-            )
-
-            return an
 
         angle = always_redraw(
             lambda: Angle.from_three_points(
@@ -410,7 +397,7 @@ class Main(MovingCameraScene):
         value.add_updater(lambda d: d.move_to(mid_angle(angle, b)))
         value.add_updater(lambda d: d.set_value(ang.get_value()))
 
-        self.add(
+        dy_values = (
             angle,
             value,
             inner_triangle,
@@ -426,6 +413,8 @@ class Main(MovingCameraScene):
             bp_p,
         )
 
+        self.add(*dy_values)
+
         self.play(p.animate.shift(LEFT))
         self.play(p.animate.shift(DOWN))
         self.play(p.animate.shift(RIGHT * 2))
@@ -439,6 +428,10 @@ class Main(MovingCameraScene):
             )
         )
         self.wait()
+
+        for i in dy_values:
+            i.clear_updaters()
+
         self.play(
             Create(
                 Line(a.get_center(), _c.get_center(), color=PINK),
@@ -471,12 +464,110 @@ class Main(MovingCameraScene):
         b_p_c = Angle.from_three_points(
             b.get_center(), _p.get_center(), _c.get_center(), radius=0.6
         )
-        b_c_p_label = MathTex(r"120 ^{\circ}").scale(0.5).move_to(mid_angle(b_p_c, _p))
+        b_p_c_label = MathTex(r"120 ^{\circ}").scale(0.5).move_to(mid_angle(b_p_c, _p))
 
-        self.play(Create(b_p_c), FadeIn(b_c_p_label))
+        self.play(Create(b_p_c), FadeIn(b_p_c_label))
         self.wait()
         self.play(Restore(self.camera.frame))
         self.wait()
+
+        bpc = Angle.from_three_points(
+            b.get_center(), p.get_center(), c.get_center(), radius=0.6
+        )
+        bpc_label = MathTex(r"120 ^{\circ}").scale(0.5).move_to(mid_angle(bpc, p))
+
+        self.play(Create(bpc), FadeIn(bpc_label))
+        self.wait()
+        self.play(
+            *[Indicate(i) for i in (bpc, bpc_label, b_p_c, b_p_c_label)],
+        )
+        self.wait()
+
+        cpa = Angle.from_three_points(
+            c.get_center(), p.get_center(), a.get_center(), radius=0.6
+        )
+        cpa_label = MathTex(r"120 ^{\circ}").scale(0.5).move_to(mid_angle(cpa, p))
+
+        self.camera.frame.save_state()
+
+        self.play(
+            self.camera.frame.animate.move_to(p.get_center()).set(width=4),
+        )
+
+        self.play(
+            Create(cpa),
+            FadeIn(cpa_label),
+            # remove stuff
+            *[FadeOut(i) for i in (p_label, b_p_c, b_p_c_label, bp_p, b_pp)],
+        )
+
+        self.wait()
+        self.play(Restore(self.camera.frame))
+        self.wait()
+
+        sides = VGroup(a_side_label, b_side_label, c_side_label)
+        dots = VGroup(a, b, c)
+        d_labels = VGroup(a_label, b_label, c_label)
+        lines = VGroup(ap, bp, cp)
+        self.add_foreground_mobjects(*(dots + d_labels))
+
+        self.remove(ab, b_c, b_p)
+        self.play(Transform(bp, DashedLine(b.get_center(), p.get_center())))
+        self.play(
+            *[
+                FadeOut(i)
+                for i in (
+                    proofs,
+                    t5,
+                    _c_label,
+                    _p_label,
+                    c,
+                    p,
+                    _p,
+                    _c,
+                    inner_triangle,
+                    p_p,
+                    angle,
+                    value,
+                )
+            ],
+            VGroup(
+                lines,
+                dots,
+                d_labels,
+                triangle,
+                sides,
+                apb,
+                apb_label,
+                cpa,
+                cpa_label,
+                bpc,
+                bpc_label,
+            )
+            .animate.shift(3 * RIGHT)
+            .scale(2),
+        )
+
+        t6 = Tex("The Fermat point").to_corner(UR).shift(DL)
+        t6_u = Underline(t6, color=YELLOW)
+
+        self.play(Write(t6))
+        self.wait()
+        self.play(ShowPassingFlash(t6_u, 0.5))
+        self.wait()
+        self.play(*[FadeOut(mob) for mob in self.mobjects])
+        self.wait()
+
+    def ending(self):
+        t = Tex("Thanks for watching!")
+        self.play(Write(t))
+        self.play(FocusOn(t))
+        self.play(*[FadeOut(mob) for mob in self.mobjects])
+
+    def construct(self):
+        self.introduction()
+        self.demonstration()
+        self.ending()
 
     def calculate_fermats_point(self, a, b, c):
         OMEGA = (c + b) / 2 + self.perp(c, b) * np.sqrt(3 / 4) * np.linalg.norm(c - b)
